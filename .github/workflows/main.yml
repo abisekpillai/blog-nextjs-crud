@@ -1,4 +1,4 @@
-name: Build WF
+name: Build & Deploy
 
 on:
   workflow_dispatch:
@@ -11,18 +11,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy
+      - name: Deploy files
         run: |
-          cp -r . /opt/blog-nextjs-crud/
-          cp /opt/.env /opt/blog-nextjs-crud/.env
+          mkdir -p /home/abisek/blog-nextjs-crud
+          rsync -a --delete \
+            --exclude='.env' \
+            ./ /home/abisek/blog-nextjs-crud/
 
-          cd /opt/blog-nextjs-crud
-
-          npm ci
-          npx prisma generate
-          npm run build
-
-      - name: Restart application
+      - name: Copy environment
         run: |
-          cd /opt/blog-nextjs-crud
-          npm run start
+          cp /opt/.env /home/abisek/blog-nextjs-crud/.env
+
+      - name: Build Docker image
+        working-directory: /home/abisek/blog-nextjs-crud
+        run: docker build -t blog-nextjs-crud .
+
+      - name: Stop existing container
+        run: docker rm -f nextjs || true
+
+      - name: Start container
+        run: |
+          docker run -d \
+            --name nextjs \
+            --network nextjs-network \
+            --env-file /home/abisek/blog-nextjs-crud/.env \
+            -p 3000:3000 \
+            blog-nextjs-crud
