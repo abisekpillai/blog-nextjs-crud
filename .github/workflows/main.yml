@@ -11,12 +11,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
       - name: Deploy files
         run: |
           mkdir -p /home/abisek/blog-nextjs-crud
@@ -33,9 +27,7 @@ jobs:
         run: npm ci
 
       - name: Build
-        working-directory: /home/abisek/blog-nextjs-crud
         run: npm run build
 
       - name: Start application
-        working-directory: /home/abisek/blog-nextjs-crud
         run: npm run start
