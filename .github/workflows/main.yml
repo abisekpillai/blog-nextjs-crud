@@ -8,10 +8,13 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Change directory
-        run: cd /opt/
+        run: cd /opt
 
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Copy .env
+        run: cp ./.env .env
 
       - name: npm Build
         run: npm run build
