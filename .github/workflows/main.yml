@@ -2,26 +2,27 @@ name: Build WF
 
 on:
   workflow_dispatch:
-  
-jobs:
-  build:
-    runs-on: self-hosted
-    steps:
-      - name: Change directory
-        run: cd /opt && pwd
 
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Copy .env
-        run: cp ../.env .env
+      - name: Deploy
+        run: |
+          cp -r . /opt/blog-nextjs-crud/
+          cp /opt/.env /opt/blog-nextjs-crud/.env
 
-      - name: npm Build
-        run: npm run build
-    
-  deploy:
-    runs-on: self-hosted
-    needs: build
-    steps:
-      - name: npm start
-        run: npm run start
+          cd /opt/blog-nextjs-crud
+
+          npm ci
+          npx prisma generate
+          npm run build
+
+      - name: Restart application
+        run: |
+          cd /opt/blog-nextjs-crud
+          npm run start
