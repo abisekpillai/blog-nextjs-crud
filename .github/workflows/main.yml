@@ -7,34 +7,99 @@ jobs:
   deploy:
     runs-on: self-hosted
 
-    defaults:
-      run:
-        working-directory: /home/abisek/blog-nextjs-crud
+    env:
+      APP_DIR: /home/abisek/blog-nextjs-crud
 
     steps:
-      - name: Checkout code
+      # -----------------------------
+      # Checkout
+      # -----------------------------
+      - name: Checkout repository
         uses: actions/checkout@v4
 
+      # -----------------------------
+      # Setup Node.js
+      # -----------------------------
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
-      - name: Deploy files
-        working-directory: /home/abisek
+      # -----------------------------
+      # Deploy source code
+      # -----------------------------
+      - name: Deploy source
         run: |
-          mkdir -p blog-nextjs-crud
+          mkdir -p "$APP_DIR"
+
           rsync -a --delete \
             --exclude='.env' \
+            --exclude='node_modules/' \
+            --exclude='.next/' \
             "$GITHUB_WORKSPACE/" \
-            blog-nextjs-crud/
+            "$APP_DIR/"
 
-      - name: Copy environment
-        run: cp /opt/.env .env
+      # -----------------------------
+      # Copy production environment
+      # -----------------------------
+      - name: Copy .env
+        run: |
+          cp /opt/.env "$APP_DIR/.env"
 
+      # -----------------------------
+      # Install dependencies
+      # -----------------------------
       - name: Install dependencies
-        run: npm ci
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          npm ci --include=dev
 
-      - name: Build
-        run: npm run build
+      # -----------------------------
+      # Verify installation
+      # -----------------------------
+      - name: Verify dependencies
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          echo "Node:"
+          node --version
+
+          echo "NPM:"
+          npm --version
+
+          echo "Next.js:"
+          npm ls next
+
+          echo "Next binary:"
+          ls -la node_modules/.bin/next
+
+      # -----------------------------
+      # Build Next.js
+      # -----------------------------
+      - name: Build application
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          npm run build
+
+      # -----------------------------
+      # Restart application
+      # -----------------------------
+      - name: Restart application
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          if pm2 describe blog-nextjs-crud > /dev/null 2>&1; then
+            pm2 restart blog-nextjs-crud
+          else
+            pm2 start npm \
+              --name blog-nextjs-crud \
+              -- start
+          fi
+
+          pm2 save
+
+      # -----------------------------
+      # Verify application
+      # -----------------------------
+      - name: Application status
+        run: |
+          pm2 status
