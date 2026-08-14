@@ -7,27 +7,34 @@ jobs:
   deploy:
     runs-on: self-hosted
 
+    defaults:
+      run:
+        working-directory: /home/abisek/blog-nextjs-crud
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
       - name: Deploy files
+        working-directory: /home/abisek
         run: |
-          mkdir -p /home/abisek/blog-nextjs-crud
+          mkdir -p blog-nextjs-crud
           rsync -a --delete \
             --exclude='.env' \
-            ./ /home/abisek/blog-nextjs-crud/
+            "$GITHUB_WORKSPACE/" \
+            blog-nextjs-crud/
 
       - name: Copy environment
-        run: |
-          cp /opt/.env /home/abisek/blog-nextjs-crud/.env
+        run: cp /opt/.env .env
 
-      - name: Install node modules
-        working-directory: /home/abisek/blog-nextjs-crud
+      - name: Install dependencies
         run: npm ci
 
       - name: Build
         run: npm run build
-
-      - name: Start application
-        run: npm run start
