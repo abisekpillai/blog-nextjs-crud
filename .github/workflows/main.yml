@@ -22,18 +22,12 @@ jobs:
         run: |
           cp /opt/.env /home/abisek/blog-nextjs-crud/.env
 
-      - name: Build Docker image
+      - name: Install node modules
         working-directory: /home/abisek/blog-nextjs-crud
-        run: docker build -t blog-nextjs-crud .
+        run: npm ci
 
-      - name: Stop existing container
-        run: docker rm -f nextjs || true
+      - name: Build
+        run: npm run build
 
-      - name: Start container
-        run: |
-          docker run -d \
-            --name nextjs \
-            --network nextjs-network \
-            --env-file /home/abisek/blog-nextjs-crud/.env \
-            -p 3000:3000 \
-            blog-nextjs-crud
+      - name: Start application
+        run: npm run start
