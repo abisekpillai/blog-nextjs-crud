@@ -1,0 +1,24 @@
+name: Build WF
+
+on:
+  workflow_dispatch:
+  
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - name: Change directory
+        run: cd /opt/
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: npm Build
+        run: npm run build
+    
+  deploy:
+    runs-on: self-hosted
+    needs: build
+    steps:
+      - name: npm start
+        run: npm run start
