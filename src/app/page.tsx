@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { fetchPosts } from "@/db/queries/posts";
 import Link from "next/link";
 import PostDelete from "@/components/post-delete";
