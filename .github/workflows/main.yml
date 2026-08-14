@@ -8,7 +8,7 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Change directory
-        run: cd /opt
+        run: cd /opt && pwd
 
       - name: Checkout code
         uses: actions/checkout@v4
