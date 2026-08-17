@@ -69,6 +69,7 @@ jobs:
             --restart unless-stopped \
             --env-file .env \
             -p 3000:3000 \
+            --network nextjs-network \
             "$IMAGE_NAME"
 
       # -----------------------------
