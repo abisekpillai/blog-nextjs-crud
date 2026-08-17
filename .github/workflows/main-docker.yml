@@ -1,0 +1,80 @@
+name: Build & Deploy with Docker
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    env:
+      APP_DIR: /home/abisek/blog-nextjs-crud
+      CONTAINER_NAME: blog-nextjs-crud
+      IMAGE_NAME: blog-nextjs-crud:latest
+
+    steps:
+      # -----------------------------
+      # Checkout
+      # -----------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -----------------------------
+      # Deploy source code
+      # -----------------------------
+      - name: Deploy source
+        run: |
+          mkdir -p "$APP_DIR"
+
+          rsync -a --delete \
+            --exclude='.env' \
+            --exclude='node_modules/' \
+            --exclude='.next/' \
+            "$GITHUB_WORKSPACE/" \
+            "$APP_DIR/"
+
+      # -----------------------------
+      # Copy production environment
+      # -----------------------------
+      - name: Copy .env
+        run: |
+          cp /opt/.env-docker "$APP_DIR/.env"
+
+      # -----------------------------
+      # Build Docker image
+      # -----------------------------
+      - name: Build Docker image
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          docker build \
+            --pull \
+            -t "$IMAGE_NAME" \
+            .
+
+      # -----------------------------
+      # Stop old container
+      # -----------------------------
+      - name: Stop old container
+        run: |
+          docker rm -f "$CONTAINER_NAME" 2>/dev/null || true
+
+      # -----------------------------
+      # Start new container
+      # -----------------------------
+      - name: Start new container
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          docker run -d \
+            --name "$CONTAINER_NAME" \
+            --restart unless-stopped \
+            --env-file .env \
+            -p 3000:3000 \
+            "$IMAGE_NAME"
+
+      # -----------------------------
+      # Verify container
+      # -----------------------------
+      - name: Container status
+        run: |
+          docker ps \
+            --filter "name=$CONTAINER_NAME"
