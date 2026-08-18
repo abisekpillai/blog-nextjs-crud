@@ -5,6 +5,16 @@ FROM node:20-bookworm-slim AS deps
 
 WORKDIR /app
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends wget ca-certificates \
+    && wget -q https://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.1_1.1.1w-0+deb11u8_amd64.deb \
+       -O /tmp/libssl1.1.deb \
+    && dpkg -i /tmp/libssl1.1.deb \
+    && rm -f /tmp/libssl1.1.deb \
+    && apt-get purge -y wget \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY package.json package-lock.json ./
 
 RUN npm ci
