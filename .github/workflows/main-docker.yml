@@ -10,6 +10,7 @@ jobs:
     env:
       APP_DIR: /home/abisek/blog-nextjs-crud
       CONTAINER_NAME: blog-nextjs-crud
+      DATABASE_URL_DOCKER: ${{secrets.DATABASE_URL_DOCKER}}
       IMAGE_NAME: blog-nextjs-crud:latest
 
     steps:
@@ -32,13 +33,6 @@ jobs:
             --exclude='.next/' \
             "$GITHUB_WORKSPACE/" \
             "$APP_DIR/"
-
-      # -----------------------------
-      # Copy production environment
-      # -----------------------------
-      - name: Copy .env
-        run: |
-          cp /opt/.env-docker "$APP_DIR/.env"
 
       # -----------------------------
       # Build Docker image
