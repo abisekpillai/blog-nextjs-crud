@@ -17,6 +17,9 @@ FROM node:20-bookworm-slim AS builder
 
 WORKDIR /app
 
+COPY --from=deps /usr/lib/x86_64-linux-gnu/libssl.so.1.1 /usr/lib/x86_64-linux-gnu/libssl.so.1.1
+COPY --from=deps /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
