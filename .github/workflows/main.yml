@@ -9,6 +9,7 @@ jobs:
 
     env:
       APP_DIR: /home/abisek/blog-nextjs-crud
+      DATABASE_URL: ${{secrets.DATABASE_URL}}
 
     steps:
       # -----------------------------
@@ -39,13 +40,6 @@ jobs:
             --exclude='.next/' \
             "$GITHUB_WORKSPACE/" \
             "$APP_DIR/"
-
-      # -----------------------------
-      # Copy production environment
-      # -----------------------------
-      - name: Copy .env
-        run: |
-          cp /opt/.env "$APP_DIR/.env"
 
       # -----------------------------
       # Install dependencies
