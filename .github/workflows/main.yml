@@ -9,7 +9,7 @@ jobs:
 
     env:
       APP_DIR: /home/abisek/blog-nextjs-crud
-      DATABASE_URL: ${{secrets.DATABASE_URL}}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
     steps:
       # -----------------------------
@@ -46,34 +46,21 @@ jobs:
       # -----------------------------
       - name: Install dependencies
         working-directory: ${{ env.APP_DIR }}
-        run: |
-          npm ci --include=dev
+        run: npm ci
 
       # -----------------------------
-      # Verify installation
+      # Lint
       # -----------------------------
-      - name: Verify dependencies
+      - name: Lint
         working-directory: ${{ env.APP_DIR }}
-        run: |
-          echo "Node:"
-          node --version
-
-          echo "NPM:"
-          npm --version
-
-          echo "Next.js:"
-          npm ls next
-
-          echo "Next binary:"
-          ls -la node_modules/.bin/next
+        run: npm run lint
 
       # -----------------------------
       # Build Next.js
       # -----------------------------
       - name: Build application
         working-directory: ${{ env.APP_DIR }}
-        run: |
-          npm run build
+        run: npm run build
 
       # -----------------------------
       # Restart application
@@ -95,5 +82,4 @@ jobs:
       # Verify application
       # -----------------------------
       - name: Application status
-        run: |
-          pm2 status
+        run: pm2 status
