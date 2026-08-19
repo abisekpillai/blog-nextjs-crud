@@ -37,7 +37,7 @@ jobs:
 
       - name: Dependency audit
         working-directory: ${{ env.APP_DIR }}
-        run: npm audit --audit-level=low
+        run: npm audit --audit-level=critical
 
       - name: Lint
         working-directory: ${{ env.APP_DIR }}
