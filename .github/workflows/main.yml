@@ -40,11 +40,25 @@ jobs:
         run: npm ci
 
       # -----------------------------
+      # Dependency vulnerability scan
+      # -----------------------------
+      - name: Dependency audit
+        working-directory: ${{ env.APP_DIR }}
+        run: npm audit --audit-level=high
+
+      # -----------------------------
       # Lint
       # -----------------------------
       - name: Lint
         working-directory: ${{ env.APP_DIR }}
         run: npm run lint
+
+      # -----------------------------
+      # Type check
+      # -----------------------------
+      - name: Type check
+        working-directory: ${{ env.APP_DIR }}
+        run: npx tsc --noEmit
 
       # -----------------------------
       # Build Next.js
