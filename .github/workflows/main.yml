@@ -3,24 +3,23 @@ name: Build & Deploy
 on:
   workflow_dispatch:
 
+env:
+  APP_DIR: /home/abisek/blog-nextjs-crud
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
 jobs:
-  deploy:
+
+  # ==================================================
+  # Build
+  # ==================================================
+  build:
+    name: Build
     runs-on: self-hosted
 
-    env:
-      APP_DIR: /home/abisek/blog-nextjs-crud
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
     steps:
-      # -----------------------------
-      # Checkout
-      # -----------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # -----------------------------
-      # Deploy source code
-      # -----------------------------
       - name: Deploy source
         run: |
           mkdir -p "$APP_DIR"
@@ -32,44 +31,35 @@ jobs:
             "$GITHUB_WORKSPACE/" \
             "$APP_DIR/"
 
-      # -----------------------------
-      # Install dependencies
-      # -----------------------------
       - name: Install dependencies
         working-directory: ${{ env.APP_DIR }}
         run: npm ci
 
-      # -----------------------------
-      # Dependency vulnerability scan
-      # -----------------------------
       - name: Dependency audit
         working-directory: ${{ env.APP_DIR }}
-        run: npm audit --audit-level=moderate
+        run: npm audit --audit-level=low
 
-      # -----------------------------
-      # Lint
-      # -----------------------------
       - name: Lint
         working-directory: ${{ env.APP_DIR }}
         run: npm run lint
 
-      # -----------------------------
-      # Type check
-      # -----------------------------
       - name: Type check
         working-directory: ${{ env.APP_DIR }}
         run: npx tsc --noEmit
 
-      # -----------------------------
-      # Build Next.js
-      # -----------------------------
       - name: Build application
         working-directory: ${{ env.APP_DIR }}
         run: npm run build
 
-      # -----------------------------
-      # Restart application
-      # -----------------------------
+  # ==================================================
+  # Deploy
+  # ==================================================
+  deploy:
+    name: Deploy
+    runs-on: self-hosted
+    needs: build
+
+    steps:
       - name: Restart application
         working-directory: ${{ env.APP_DIR }}
         run: |
@@ -83,8 +73,14 @@ jobs:
 
           pm2 save
 
-      # -----------------------------
-      # Verify application
-      # -----------------------------
+  # ==================================================
+  # Verify
+  # ==================================================
+  verify:
+    name: Verify
+    runs-on: self-hosted
+    needs: deploy
+
+    steps:
       - name: Application status
         run: pm2 status
