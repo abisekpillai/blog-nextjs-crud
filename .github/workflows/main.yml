@@ -8,10 +8,6 @@ env:
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
 jobs:
-
-  # ==================================================
-  # Build
-  # ==================================================
   build:
     name: Build
     runs-on: self-hosted
@@ -19,6 +15,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Deploy source
         run: |
