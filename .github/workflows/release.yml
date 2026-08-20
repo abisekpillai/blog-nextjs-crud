@@ -1,0 +1,179 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  APP_DIR: /home/abisek/blog-nextjs-crud
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+jobs:
+
+  # ==================================================
+  # Find latest successful build
+  # ==================================================
+  find-build:
+    name: Find Latest Build
+    runs-on: self-hosted
+
+    outputs:
+      run-id: ${{ steps.find.outputs.run-id }}
+      sha: ${{ steps.find.outputs.sha }}
+      artifact-name: ${{ steps.find.outputs.artifact-name }}
+
+    steps:
+      - name: Find latest successful Build
+        id: find
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const response = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'build.yml',
+              branch: 'standalone',
+              status: 'success',
+              per_page: 20
+            });
+
+            const runs = response.data.workflow_runs;
+
+            if (runs.length === 0) {
+              core.setFailed('No successful Build workflow runs found.');
+              return;
+            }
+
+            const run = runs[0];
+
+            const runId = run.id;
+            const sha = run.head_sha;
+            const artifactName = `blog-nextjs-build-${sha}`;
+
+            core.info(`Latest successful build:`);
+            core.info(`Run ID: ${runId}`);
+            core.info(`Commit: ${sha}`);
+            core.info(`Artifact: ${artifactName}`);
+
+            core.setOutput('run-id', runId);
+            core.setOutput('sha', sha);
+            core.setOutput('artifact-name', artifactName);
+
+  # ==================================================
+  # Download artifact
+  # ==================================================
+  download:
+    name: Download Build
+    runs-on: self-hosted
+    needs: find-build
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: ${{ needs.find-build.outputs.artifact-name }}
+          run-id: ${{ needs.find-build.outputs.run-id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: release-artifact
+
+      - name: Inspect artifact
+        run: |
+          echo "=== Downloaded artifact ==="
+          find release-artifact -maxdepth 4 -type f | sort
+
+          echo ""
+          echo "=== Artifact size ==="
+          du -sh release-artifact
+
+  # ==================================================
+  # Run database migrations
+  # ==================================================
+  migrate:
+    name: Database Migration
+    runs-on: self-hosted
+    needs:
+      - find-build
+      - download
+
+    steps:
+      - name: Checkout exact build commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.find-build.outputs.sha }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Prisma migrations
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+  # ==================================================
+  # Deploy
+  # ==================================================
+  deploy:
+    name: Deploy
+    runs-on: self-hosted
+    needs:
+      - find-build
+      - download
+      - migrate
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: ${{ needs.find-build.outputs.artifact-name }}
+          run-id: ${{ needs.find-build.outputs.run-id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: release-artifact
+
+      - name: Deploy artifact
+        run: |
+          set -euo pipefail
+
+          echo "=== Preparing deployment ==="
+
+          mkdir -p "$APP_DIR"
+
+          rsync -a --delete \
+            --exclude='.env' \
+            "$GITHUB_WORKSPACE/release-artifact/" \
+            "$APP_DIR/"
+
+          echo "=== Deployment contents ==="
+          ls -la "$APP_DIR"
+
+      - name: Restart application
+        run: |
+          set -euo pipefail
+
+          if pm2 describe blog-nextjs-crud > /dev/null 2>&1; then
+            pm2 restart blog-nextjs-crud
+          else
+            cd "$APP_DIR"
+
+            pm2 start npm \
+              --name blog-nextjs-crud \
+              -- start
+          fi
+
+          pm2 save
+
+  # ==================================================
+  # Verify
+  # ==================================================
+  verify:
+    name: Verify
+    runs-on: self-hosted
+    needs: deploy
+
+    steps:
+      - name: Application status
+        run: |
+          pm2 status
+          pm2 describe blog-nextjs-crud
