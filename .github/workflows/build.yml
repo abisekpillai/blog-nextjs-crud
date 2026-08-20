@@ -40,11 +40,16 @@ jobs:
 
       - name: Prepare standalone artifact
         run: |
-          mkdir -p build-artifact
+          rm -rf build-artifact
 
-          cp -r .next/standalone/* build-artifact/
-          cp -r .next/static build-artifact/.next/static
-          cp -r public build-artifact/public
+          cp -a .next/standalone build-artifact
+          mkdir -p build-artifact/.next
+
+          cp -a .next/static build-artifact/.next/static
+
+          if [ -d "public" ]; then
+            cp -a public build-artifact/public
+          fi
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
