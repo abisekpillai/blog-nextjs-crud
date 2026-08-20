@@ -40,19 +40,30 @@ jobs:
 
       - name: Prepare standalone artifact
         run: |
+          set -eux
+
           rm -rf build-artifact
 
-          mkdir -p build-artifact/.next
+          echo "=== Source standalone directory ==="
+          ls -la .next/standalone
 
+          echo "=== Source .next directory ==="
+          ls -la .next
+
+          # Copy the standalone application
+          mkdir -p build-artifact
           cp -a .next/standalone/. build-artifact/
-          cp -a .next/static build-artifact/.next/
 
+          # Next.js standalone does not include .next/static
+          mkdir -p build-artifact/.next
+          cp -a .next/static build-artifact/.next/static
+
+          # Copy public assets if they exist
           if [ -d "public" ]; then
-            mkdir -p build-artifact/public
-            cp -a public/. build-artifact/public/
+            cp -a public build-artifact/public
           fi
 
-          echo "=== Artifact structure ==="
+          echo "=== Final artifact ==="
           find build-artifact -maxdepth 3 -type f | sort
 
       - name: Upload Build Artifact
