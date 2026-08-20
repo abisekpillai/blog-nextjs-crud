@@ -1,0 +1,54 @@
+name: Build
+
+on:
+  workflow_dispatch:
+
+env:
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+jobs:
+  build:
+    name: Build
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Dependency audit
+        continue-on-error: true
+        run: npm audit --audit-level=critical
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build application
+        run: npm run build
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Prepare standalone artifact
+        run: |
+          mkdir -p build-artifact
+
+          cp -r .next/standalone/* build-artifact/
+          cp -r .next/static build-artifact/.next/static
+          cp -r public build-artifact/public
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: blog-nextjs-build-${{ github.sha }}
+          path: build-artifact/
+          retention-days: 30
