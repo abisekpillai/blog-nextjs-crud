@@ -42,14 +42,18 @@ jobs:
         run: |
           rm -rf build-artifact
 
-          cp -a .next/standalone build-artifact
           mkdir -p build-artifact/.next
 
-          cp -a .next/static build-artifact/.next/static
+          cp -a .next/standalone/. build-artifact/
+          cp -a .next/static build-artifact/.next/
 
           if [ -d "public" ]; then
-            cp -a public build-artifact/public
+            mkdir -p build-artifact/public
+            cp -a public/. build-artifact/public/
           fi
+
+          echo "=== Artifact structure ==="
+          find build-artifact -maxdepth 3 -type f | sort
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
