@@ -149,20 +149,29 @@ jobs:
           ls -la "$APP_DIR"
 
       - name: Restart application
+        env:
+          NODE_ENV: production
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           set -euo pipefail
 
-          if pm2 describe blog-nextjs-crud > /dev/null 2>&1; then
-            pm2 restart blog-nextjs-crud
-          else
-            cd "$APP_DIR"
+          cd "$APP_DIR"
 
-            pm2 start npm \
+          if [ ! -f "server.js" ]; then
+            echo "ERROR: server.js not found"
+            exit 1
+          fi
+
+          if pm2 describe blog-nextjs-crud > /dev/null 2>&1; then
+            pm2 restart blog-nextjs-crud --update-env
+          else
+            pm2 start server.js \
               --name blog-nextjs-crud \
-              -- start
+              --cwd "$APP_DIR"
           fi
 
           pm2 save
+          pm2 status
 
   # ==================================================
   # Verify
