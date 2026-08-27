@@ -5,7 +5,6 @@ on:
 
 env:
   APP_DIR: /home/abisek/blog-nextjs-crud
-  DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
 jobs:
   build:
@@ -61,9 +60,17 @@ jobs:
     runs-on: self-hosted
     needs: build
 
+    # This job is a deployment to the "dev" environment.
+    # Secrets referenced by this job come from the
+    # GitHub "dev" environment.
+    environment:
+      name: dev
+
     steps:
       - name: Restart application
         working-directory: ${{ env.APP_DIR }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           if pm2 describe blog-nextjs-crud > /dev/null 2>&1; then
             pm2 restart blog-nextjs-crud
