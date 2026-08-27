@@ -58,6 +58,9 @@ jobs:
           mkdir -p build-artifact/.next
           cp -a .next/static build-artifact/.next/static
 
+          # Copy BUILD_ID required by Next.js
+          cp .next/BUILD_ID build-artifact/.next/BUILD_ID
+
           # Copy public assets if they exist
           if [ -d "public" ]; then
             cp -a public build-artifact/public
